@@ -1,16 +1,32 @@
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { Trend } from 'k6/metrics';
+import { check } from 'k6';
+import { Trend, Rate } from 'k6/metrics';
 
-export const getContactsDuration = new Trend('get_contacts', true);
+export const getFuncionalidadesDuration = new Trend(
+  'get_funcionalidades',
+  true
+);
+export const RateContentOK = new Rate('content_OK');
 
 export const options = {
   thresholds: {
-    http_req_failed: ['rate<0.01'],
-    http_req_duration: ['avg<10000']
+    http_req_failed: ['rate<0.12'],
+    get_funcionalidades: ['p(95)<5700']
   },
-  stages: [{ duration: '1m', target: 1000 }]
+  stages: [
+    { duration: '10s', target: 0 },
+    { duration: '20s', target: 10 },
+    { duration: '30s', target: 10 },
+    { duration: '30s', target: 30 },
+    { duration: '30s', target: 30 },
+    { duration: '30s', target: 60 },
+    { duration: '30s', target: 60 },
+    { duration: '30s', target: 140 },
+    { duration: '30s', target: 140 },
+    { duration: '50s', target: 260 }
+  ]
 };
 
 export function handleSummary(data) {
@@ -21,14 +37,13 @@ export function handleSummary(data) {
 }
 
 export default function () {
-  const baseUrl = 'https://api.useawise.com/companies';
-
-  const token = 'goterGZPSDRWcv/qoEUVEX0rUYTsSrJGP4VNK/33kXY=';
+  // const baseUrl = 'https://api.useawise.com/companies';
+  const baseUrl = 'https://controlle.com/funcionalidades';
 
   const params = {
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
+      'Content-Type': 'text/html'
+      // Authorization: `Bearer ${token}`
     }
   };
 
@@ -36,9 +51,11 @@ export default function () {
 
   const res = http.get(`${baseUrl}`, params);
 
-  getContactsDuration.add(res.timings.duration);
+  getFuncionalidadesDuration.add(res.timings.duration);
+
+  RateContentOK.add(res.status === OK);
 
   check(res, {
-    'get companies - status 200': () => res.status === OK
+    'GET Funcionalidades - Status 200': () => res.status === OK
   });
 }
